@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "D:\\git\\ASHSAHSDA\\ASHSAHSDA.csproj": {}
+    "C:\\Users\\lenur\\Desktop\\netbot\\ASHSAHSDA.csproj": {}
   },
   "projects": {
-    "D:\\git\\ASHSAHSDA\\ASHSAHSDA.csproj": {
+    "C:\\Users\\lenur\\Desktop\\netbot\\ASHSAHSDA.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\git\\ASHSAHSDA\\ASHSAHSDA.csproj",
+        "projectUniqueName": "C:\\Users\\lenur\\Desktop\\netbot\\ASHSAHSDA.csproj",
         "projectName": "ASHSAHSDA",
-        "projectPath": "D:\\git\\ASHSAHSDA\\ASHSAHSDA.csproj",
-        "packagesPath": "C:\\Users\\jnbro\\.nuget\\packages\\",
-        "outputPath": "D:\\git\\ASHSAHSDA\\obj\\",
+        "projectPath": "C:\\Users\\lenur\\Desktop\\netbot\\ASHSAHSDA.csproj",
+        "packagesPath": "C:\\Users\\lenur\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\lenur\\Desktop\\netbot\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\jnbro\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\lenur\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -22,7 +22,7 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "https://nuget.org/api/v2": {}
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net6.0": {
@@ -44,9 +44,9 @@
               "target": "Package",
               "version": "[3.7.2, )"
             },
-            "dotenv.net": {
+            "DotNetEnv": {
               "target": "Package",
-              "version": "[3.1.1, )"
+              "version": "[2.3.0, )"
             },
             "log4net": {
               "target": "Package",
@@ -68,7 +68,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.302\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.300\\RuntimeIdentifierGraph.json"
         }
       }
     }

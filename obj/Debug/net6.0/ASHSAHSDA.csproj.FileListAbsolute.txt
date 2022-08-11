@@ -33,6 +33,7 @@ D:\git\ASHSAHSDA\obj\Debug\net6.0\ref\ASHSAHSDA.dll
 D:\git\ASHSAHSDA\bin\Debug\net6.0\DotNetEnv.dll
 D:\git\ASHSAHSDA\bin\Debug\net6.0\Sprache.dll
 D:\git\ASHSAHSDA\bin\Debug\net6.0\ASHSAHSDA.dll.config
+<<<<<<< HEAD
 C:\Users\lenur\Desktop\netbot\bin\Debug\net6.0\ASHSAHSDA.exe
 C:\Users\lenur\Desktop\netbot\bin\Debug\net6.0\ASHSAHSDA.dll.config
 C:\Users\lenur\Desktop\netbot\bin\Debug\net6.0\ASHSAHSDA.deps.json
@@ -68,3 +69,5 @@ C:\Users\lenur\Desktop\netbot\obj\Debug\net6.0\refint\ASHSAHSDA.dll
 C:\Users\lenur\Desktop\netbot\obj\Debug\net6.0\ASHSAHSDA.pdb
 C:\Users\lenur\Desktop\netbot\obj\Debug\net6.0\ASHSAHSDA.genruntimeconfig.cache
 C:\Users\lenur\Desktop\netbot\obj\Debug\net6.0\ref\ASHSAHSDA.dll
+=======
+>>>>>>> 9a795cd8f595271138d68ce51bd29af1edb6022b

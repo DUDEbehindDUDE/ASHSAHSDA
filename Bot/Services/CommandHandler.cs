@@ -31,8 +31,12 @@ public class CommandHandler : NetBot.Program
             await context.Channel.SendMessageAsync(result.ErrorReason);
         }
 
+        var author = context.Message.Author;
+
         var commandName = command.IsSpecified ? command.Value.Name : "Unknown Command";
-        await Log(new LogMessage(LogSeverity.Info, "CommandExecution", $"{commandName} was executed at {DateTime.UtcNow}."));
+        await Log(new LogMessage(LogSeverity.Info, "CommandExecution",
+            $"{commandName} was executed at {DateTime.UtcNow}. Executed by {author.Username}#{author.Discriminator}({context.Message.Author.Id})"
+        ));
     }
 
     private async Task HandleCommandAsync(SocketMessage messageParam)

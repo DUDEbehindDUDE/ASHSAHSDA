@@ -2,8 +2,9 @@ using Discord;
 using Discord.WebSocket;
 using Discord.Commands;
 using System.Reflection;
+using NetBot;
 
-public class CommandHandler
+public class CommandHandler : NetBot.Program
 {
     private readonly DiscordSocketClient _client;
     private readonly CommandService _commands;
@@ -18,8 +19,20 @@ public class CommandHandler
 
     public async Task InstallCommandsAsync()
     {
+        await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), null);
         _client.MessageReceived += HandleCommandAsync;
-        await _commands.AddModulesAsync(assembly: Assembly.GetEntryAssembly(), services: null);
+        _commands.CommandExecuted += OnCommandExecutedAsync;
+    }
+
+    public async Task OnCommandExecutedAsync(Optional<CommandInfo> command, ICommandContext context, IResult result)
+    {
+        if (!String.IsNullOrEmpty(result?.ErrorReason))
+        {
+            await context.Channel.SendMessageAsync(result.ErrorReason);
+        }
+
+        var commandName = command.IsSpecified ? command.Value.Name : "Unknown Command";
+        await Log(new LogMessage(LogSeverity.Info, "CommandExecution", $"{commandName} was executed at {DateTime.UtcNow}."));
     }
 
     private async Task HandleCommandAsync(SocketMessage messageParam)

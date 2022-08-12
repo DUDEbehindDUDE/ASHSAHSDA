@@ -5,6 +5,7 @@ using Discord;
 using Discord.WebSocket;
 using Discord.Commands;
 using log4net;
+using NetBot.Bot.Services;
 
 namespace NetBot
 {
@@ -36,9 +37,13 @@ namespace NetBot
             await Task.Delay(-1);
         }
 
-        private Task Log(LogMessage msg)
+        protected Task Log(LogMessage msg)
         {
-            log.Info(msg.ToString());
+            if (msg.Exception != null)
+            {
+                Console.WriteLine(msg.Exception.Message);
+            }
+
             Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
         }

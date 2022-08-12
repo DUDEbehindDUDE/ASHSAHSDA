@@ -48,6 +48,22 @@
               "target": "Package",
               "version": "[2.3.0, )"
             },
+            "Microsoft.CodeAnalysis.CSharp.Scripting": {
+              "target": "Package",
+              "version": "[4.2.0, )"
+            },
+            "MySQL.Data": {
+              "target": "Package",
+              "version": "[8.0.30, )"
+            },
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.1, )"
+            },
+            "System.CodeDom": {
+              "target": "Package",
+              "version": "[6.0.0, )"
+            },
             "log4net": {
               "target": "Package",
               "version": "[2.0.14, )"

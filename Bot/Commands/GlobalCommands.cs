@@ -4,11 +4,15 @@ using Microsoft.CodeAnalysis.CSharp.Scripting;
 using System.Text.RegularExpressions;
 using NetBot.Bot.Services;
 using Newtonsoft.Json;
+using log4net;
 
 namespace NetBot.Bot.Commands
 {
     public class GlobalCommands : ModuleBase<SocketCommandContext>
     {
+
+        private static readonly ILog log = LogManager.GetLogger(typeof(Program));
+
         [Command("setglobalprefix")]
         [Summary("Set the bot's global prefix")]
         [Alias("sgp", "sp", "mp", "mgp", "modifyglobalprefix")]
@@ -35,12 +39,29 @@ namespace NetBot.Bot.Commands
 
         private Task Log(LogMessage msg)
         {
-            if (msg.Exception != null)
+            switch (msg.Severity)
             {
-                Console.WriteLine(msg.Exception.Message);
+                case LogSeverity.Critical:
+                    log.Fatal(msg.Message, msg.Exception);
+                    break;
+
+                case LogSeverity.Error:
+                    log.Error(msg.Message, msg.Exception);
+                    break;
+
+                case LogSeverity.Warning:
+                    log.Warn(msg.Message, msg.Exception);
+                    break;
+
+                case LogSeverity.Info:
+                    log.Info(msg.Message, msg.Exception);
+                    break;
+
+                default:
+                    log.Debug(msg.Message, msg.Exception);
+                    break;
             }
 
-            Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
         }
     }

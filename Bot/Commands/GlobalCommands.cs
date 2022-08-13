@@ -47,7 +47,7 @@ namespace NetBot.Bot.Commands
             {
                 try
                 {
-                    var rx = "^[`]+(cs)?|[`]+$";
+                    var rx = "^`+(cs)?|`+$";
                     var formattedCode = Regex.Replace(code, rx, "");
                     var scriptOptions = ScriptOptions.Default
                     .WithReferences(
@@ -55,8 +55,8 @@ namespace NetBot.Bot.Commands
                     )
                     .WithImports(
                         "System",
-                        "System.Text.RegularExpressions",
                         "System.Math",
+                        "System.Text.RegularExpressions",
                         "NetBot.Bot.Services.Database"
                     );
                     var scriptGlobals = Context;

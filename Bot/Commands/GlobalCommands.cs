@@ -3,9 +3,9 @@ using Discord.Commands;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using System.Text.RegularExpressions;
-using NetBot.Bot.Services;
 using Newtonsoft.Json;
 using log4net;
+using NetBot.Bot.Services.Database;
 
 namespace NetBot.Bot.Commands
 {
@@ -14,14 +14,28 @@ namespace NetBot.Bot.Commands
     {
 
         private static readonly ILog log = LogManager.GetLogger(typeof(Program));
+        private readonly DatabaseConnector psql = new DatabaseConnector(5432, "admin", "localhost", "postgres", "netbot_dev");
 
         [Command("setglobalprefix")]
         [Summary("Set the bot's global prefix")]
         [Alias("sgp", "sp", "mp", "mgp", "modifyglobalprefix")]
-        public async Task SetGlobalPrefixAsync([Remainder][Summary("Prefix to change to")] char prefix)
+        public async Task SetGlobalPrefixAsync([Remainder][Summary("Prefix to change to")] string prefix)
         {
-            await ReplyAsync("ok");
+            if (String.IsNullOrEmpty(prefix))
+            {
+                await ReplyAsync("No prefix given");
+                return;
+            }
 
+            if (prefix.Length > 2)
+            {
+                await ReplyAsync("Prefix should not be longer than 2 characters");
+                return;
+            }
+
+            await psql.ExecuteCommandAsync($"UPDATE netbot_dev SET prefix = '{prefix}' WHERE guild_id = '{Context.Guild.Id}'");
+
+            await ReplyAsync("Prefix Updated");
         }
 
         [Command("eval")]
@@ -29,20 +43,39 @@ namespace NetBot.Bot.Commands
         [Alias("e", "execute")]
         public async Task EvalAsync([Remainder][Summary("Code to execute")] string code)
         {
-            var rx = "^[`]+(cs)?|[`]+$";
-            var formattedCode = Regex.Replace(code, rx, "");
-            var scriptOptions = ScriptOptions.Default.WithImports(
-                "System",
-                "System.Text.RegularExpressions",
-                "System.Math"
-            );
-            var scriptGlobals = Context;
+            Thread thread = new Thread(async () =>
+            {
+                try
+                {
+                    var rx = "^[`]+(cs)?|[`]+$";
+                    var formattedCode = Regex.Replace(code, rx, "");
+                    var scriptOptions = ScriptOptions.Default
+                    .WithReferences(
+                        typeof(DatabaseConnector).Assembly
+                    )
+                    .WithImports(
+                        "System",
+                        "System.Text.RegularExpressions",
+                        "System.Math",
+                        "NetBot.Bot.Services.Database"
+                    );
+                    var scriptGlobals = Context;
 
-            var result = await Task.Run(
-                () => CSharpScript.RunAsync(formattedCode, scriptOptions, scriptGlobals)
-            );
+                    var result = await Task.Run(
+                        () => CSharpScript.RunAsync(formattedCode, scriptOptions, scriptGlobals)
+                    );
 
-            await ReplyAsync($"```cs\n{JsonConvert.SerializeObject(result.ReturnValue)}```");
+                    await ReplyAsync($"```cs\n{JsonConvert.SerializeObject(result.ReturnValue)}```");
+                }
+                catch (Exception e)
+                {
+                    await ReplyAsync(e.Message);
+                }
+            });
+
+            thread.Start();
+
+            await Context.Channel.TriggerTypingAsync();
         }
 
         private Task Log(LogMessage msg)

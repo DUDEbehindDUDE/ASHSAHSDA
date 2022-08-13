@@ -2,6 +2,7 @@ using Discord.Commands;
 using NetBot.Bot.Services.Database;
 namespace NetBot.Bot.Commands
 {
+    //[Group("moderation")]
     public class ServerCommands : ModuleBase<SocketCommandContext>
     {
         [Command("modifymemberpermissions")]

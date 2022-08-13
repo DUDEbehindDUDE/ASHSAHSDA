@@ -1,12 +1,14 @@
 using Discord;
 using Discord.Commands;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.Scripting;
 using System.Text.RegularExpressions;
 using NetBot.Bot.Services;
 using Newtonsoft.Json;
 
 namespace NetBot.Bot.Commands
 {
+    //[Group("admin")]
     public class GlobalCommands : ModuleBase<SocketCommandContext>
     {
         [Command("setglobalprefix")]
@@ -25,9 +27,15 @@ namespace NetBot.Bot.Commands
         {
             var rx = "^[`]+(cs)?|[`]+$";
             var formattedCode = Regex.Replace(code, rx, "");
+            var scriptOptions = ScriptOptions.Default.WithImports(
+                "System",
+                "System.Text.RegularExpressions",
+                "System.Math"
+            );
+            var scriptGlobals = Context;
 
             var result = await Task.Run(
-                () => CSharpScript.RunAsync(code, globals: Context.Client)
+                () => CSharpScript.RunAsync(formattedCode, scriptOptions, scriptGlobals)
             );
 
             await ReplyAsync($"```cs\n{JsonConvert.SerializeObject(result.ReturnValue)}```");

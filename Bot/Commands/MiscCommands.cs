@@ -6,6 +6,7 @@ using System.Linq;
 
 namespace NetBot.Bot.Commands
 {
+    //[Group("public")]
     public class MiscCommands : ModuleBase<SocketCommandContext>
     {
         [Command("echo")]

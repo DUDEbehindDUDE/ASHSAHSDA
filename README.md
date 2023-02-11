@@ -1,6 +1,7 @@
 Noticed an issue with trying to convert something like "60 minutes to seconds" where the bot would output raw JSON (Ie check for `if (result.mathjs)` fails and falls to the `else if (typeof result == 'object')` block which then just outputs the raw JSON `result` object as opposed to `result.value`. I have no clue if this is a symptom of a larger issue or not, but the change provided here is a quick solution that does fix the issue described above. At the very least, let this draw your attention to this issue, and hopefully you can find a more elegant solution than this.
 
 Example:
+
 Input:
 > owo math 60minutes to seconds
 Output:

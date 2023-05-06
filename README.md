@@ -1,2 +1,1 @@
-# ASHSAHSDA
- discord.net bot ig
+bot

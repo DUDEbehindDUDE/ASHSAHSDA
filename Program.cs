@@ -2,7 +2,9 @@
 using Discord.WebSocket;
 using Discord.Commands;
 using log4net;
+using NetBot.Bot.Commands;
 using NetBot.Bot.Services;
+using System.Diagnostics;
 
 [assembly: log4net.Config.XmlConfigurator(Watch = true)]
 
@@ -21,25 +23,21 @@ namespace NetBot
         {
 
             _client = new DiscordSocketClient();
-
             _client.Log += Log;
+            //_client.SlashCommandExecuted += new NetBot.Bot.Services.CommandHandler(_client).SlashCommandHandler;
+            _client.Ready += new SlashCommandHandler(_client).Global_Slash_Commands;
 
             DotNetEnv.Env.TraversePath().Load(".env");
 
-#pragma warning disable CS8600
             string token = DotNetEnv.Env.GetString("TOKEN");
-            if (token == null)
+            if (String.IsNullOrEmpty(token))
             {
                 log.Fatal("Discord token not provided! Create a file named '.env' and add 'TOKEN=<your bot's token>' to it.");
                 return;
             }
-#pragma warning restore CS8600
 
             await _client.LoginAsync(TokenType.Bot, token);
             await _client.StartAsync();
-
-            var commandHandler = new CommandHandler(_client, _commands, '?');
-            await commandHandler.InstallCommandsAsync();
 
             // Block this task until the program is closed.
             await Task.Delay(-1);

@@ -1,8 +1,9 @@
 using Discord;
 using Discord.Net;
 using Discord.WebSocket;
+using Discord.Interactions;
+using Discord.API;
 using NetBot.Bot.Services;
-using NetBot.Lib.Attributes;
 using NetBot.Lib.Types.JSON;
 using Newtonsoft.Json;
 
@@ -17,16 +18,19 @@ namespace NetBot.Bot.Commands.DND
 
         public ulong? Guild => null;
 
-        public async Task CommandEvent(SocketSlashCommand command)
+        public async Task CommandEvent(SocketSlashCommand slashCommand)
         {
             string json = await File.ReadAllTextAsync(Path.Combine(Directory.GetCurrentDirectory(), "data", "races.json"));
             Root? races = JsonConvert.DeserializeObject<Root>(json);
+            List<Subrace>? subraces = races?.subrace;
 
-            string arg = (string)command.Data.Options.First().Value;
+
+            string arg = (string)slashCommand.Data.Options.First().Value;
             Race? race = races?.race.Find(r => r.name.ToLower().Contains(arg.ToLower()));
 
             // there should probably be a more robust check for this in the future, plenty of valid races return no results as it is
             IEnumerable<Race>? relevantRaces = races?.race.Where(r => r.name.ToLower().Contains(arg.ToLower()));
+            IEnumerable<Subrace>? relevantSubraces = subraces?.Where(r => r.raceName.ToLower().Contains(arg.ToLower()));
 
             if (relevantRaces is null || !relevantRaces.Any(r => r.name.ToLower().Contains(arg.ToLower())))
             {
@@ -42,12 +46,36 @@ namespace NetBot.Bot.Commands.DND
                 Author = new EmbedUserBuilder(slashCommand.User)
             }.WithCurrentTimestamp();
 
-            foreach (Race race in relevantRaces)
+            var menuBuilder = new SelectMenuBuilder()
+                .WithPlaceholder("Select a source for the race")
+                .WithCustomId("racemenu");
+
+
+            int acc = 1;
+
+            if (relevantSubraces is not null)
             {
-                embed.AddField(race?.name, $"**{race?.source}**p{race?.page}", true);
+                foreach (Subrace subrace in relevantSubraces)
+                {
+                    if (acc >= 25) break;
+                    embed.AddField(subrace.name ?? subrace.raceName, $"**{subrace.source}** (p. {subrace.page})", true);
+                    menuBuilder.AddOption($"{acc}. {subrace.name} ({subrace.source})", $"{subrace.name}|{subrace.source.ToLower()}-{acc}");
+                    acc++;
+                }
             }
 
-            await slashCommand.RespondAsync(embed: embed.Build());
+            foreach (Race r in relevantRaces)
+            {
+                if (acc >= 25) break;
+                embed.AddField(r?.name, $"**{r?.source}** (p. {r?.page})", true);
+                menuBuilder.AddOption($"{acc}. {r?.name} ({r?.source})", $"{r?.name}|{r?.source.ToLower()}-{acc}", $"The {r?.name} race as published in the {r?.source}");
+                acc++;
+            }
+
+            var component = new ComponentBuilder()
+                .WithSelectMenu(menuBuilder);
+
+            await slashCommand.RespondAsync(embed: embed.Build(), components: component.Build(), ephemeral: true);
         }
     }
 }

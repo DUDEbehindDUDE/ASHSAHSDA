@@ -11,7 +11,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using NetBot.Bot.Commands;
+using NetBot.Bot.Commands.DND;
 
 namespace NetBot.Bot.Services
 {
@@ -35,7 +35,7 @@ namespace NetBot.Bot.Services
         {
             foreach (var slashCommand in GetCommands())
             {
-                var command = Activator.CreateInstance(slashCommand) as ISlashCommand;
+                ISlashCommand? command = Activator.CreateInstance(slashCommand) as ISlashCommand;
                 if (command is null) break;
 
                 await BuildSlashCommand(command);
@@ -71,17 +71,11 @@ namespace NetBot.Bot.Services
 
         public async Task SlashCommandEvent(SocketSlashCommand command)
         {
-            string name = command.Data.Name;
-            var raceCommands = typeof(Races).GetMethods();
-
-            log.Debug($"`raceCommands is null: {raceCommands is null}`");
-
-            if (!(raceCommands is null))
             foreach (var slashCommand in GetCommands())
             {
-                var _command = Activator.CreateInstance(slashCommand) as ISlashCommand;
+                ISlashCommand? _command = Activator.CreateInstance(slashCommand) as ISlashCommand;
                 if (_command is null) break;
-                
+
                 SlashCommandBuilder builder = _command.SlashCommandBuilder;
                 if (builder.Name == command.CommandName)
                 {

@@ -14,6 +14,7 @@ namespace NetBot
         private static readonly ILog log = LogManager.GetLogger(typeof(Program));
         private readonly CommandService _commands = new CommandService();
         private DiscordSocketClient? _client;
+        private ComponentHandler? componentHandler;
         public static Task Main(string[] args) => new Program().MainAsync();
 
         public async Task MainAsync()
@@ -22,6 +23,7 @@ namespace NetBot
             _client = new DiscordSocketClient();
             _client.Log += Log;
             _client.Ready += new SlashCommandHandler(_client).RegisterSlashCommands;
+            componentHandler = new ComponentHandler(_client);
 
             DotNetEnv.Env.TraversePath().Load(".env");
 
@@ -34,7 +36,6 @@ namespace NetBot
 
             await _client.LoginAsync(TokenType.Bot, token);
             await _client.StartAsync();
-
             // Block this task until the program is closed.
             await Task.Delay(-1);
         }

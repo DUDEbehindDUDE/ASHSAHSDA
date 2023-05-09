@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ASHSAHSDA": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

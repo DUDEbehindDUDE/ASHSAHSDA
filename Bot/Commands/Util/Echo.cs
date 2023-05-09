@@ -12,7 +12,7 @@ namespace NetBot.Bot.Commands.Util
     public class Echo : ISlashCommand
     {
         public SlashCommandBuilder SlashCommandBuilder => new SlashCommandBuilder()
-                .WithName("echo2")
+                .WithName("echo")
                 .WithDescription("Repeats a given phrase")
                 .AddOption("text", ApplicationCommandOptionType.String, "The text you want to be echoed", isRequired: true, isAutocomplete: true);
 

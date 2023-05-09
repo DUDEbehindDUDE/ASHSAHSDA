@@ -1,8 +1,8 @@
 ﻿using Discord;
 using Discord.Net;
 using Discord.WebSocket;
+using Discord.Interactions;
 using log4net;
-using NetBot.Bot.Commands;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -11,17 +11,19 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using NetBot.Bot.Commands;
 
 namespace NetBot.Bot.Services
 {
     public class SlashCommandHandler
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SlashCommandHandler));
-        private DiscordSocketClient _client;
+        private readonly DiscordSocketClient _client;
 
         public SlashCommandHandler(DiscordSocketClient client)
         {
             _client = client;
+            _client.SlashCommandExecuted += SlashCommandEvent;
         }
 
         static dynamic GetCommands()
@@ -29,7 +31,7 @@ namespace NetBot.Bot.Services
             return Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(ISlashCommand).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
         }
 
-        public async Task Global_Slash_Commands()
+        public async Task RegisterSlashCommands()
         {
             foreach (var slashCommand in GetCommands())
             {

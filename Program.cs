@@ -2,7 +2,6 @@
 using Discord.WebSocket;
 using Discord.Commands;
 using log4net;
-using NetBot.Bot.Commands;
 using NetBot.Bot.Services;
 using System.Diagnostics;
 
@@ -13,9 +12,7 @@ namespace NetBot
     public class Program
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(Program));
-
         private readonly CommandService _commands = new CommandService();
-
         private DiscordSocketClient? _client;
         public static Task Main(string[] args) => new Program().MainAsync();
 
@@ -24,12 +21,11 @@ namespace NetBot
 
             _client = new DiscordSocketClient();
             _client.Log += Log;
-            _client.SlashCommandExecuted += new SlashCommandHandler(_client).SlashCommandEvent;
-            _client.Ready += new SlashCommandHandler(_client).Global_Slash_Commands;
+            _client.Ready += new SlashCommandHandler(_client).RegisterSlashCommands;
 
             DotNetEnv.Env.TraversePath().Load(".env");
 
-            string token = DotNetEnv.Env.GetString("TOKEN2");
+            string token = DotNetEnv.Env.GetString("TOKEN");
             if (String.IsNullOrEmpty(token))
             {
                 log.Fatal("Discord token not provided! Create a file named '.env' and add 'TOKEN=<your bot's token>' to it.");
@@ -45,13 +41,6 @@ namespace NetBot
 
         protected Task Log(LogMessage msg)
         {
-            //if (msg.Exception != null)
-            //{
-            //    Console.WriteLine(msg.Exception.Message);
-            //}
-            //
-            //Console.WriteLine(msg.ToString());
-
             switch (msg.Severity)
             {
                 case LogSeverity.Critical:
@@ -74,7 +63,6 @@ namespace NetBot
                     log.Debug(msg.Message, msg.Exception);
                     break;
             }
-
             return Task.CompletedTask;
         }
     }

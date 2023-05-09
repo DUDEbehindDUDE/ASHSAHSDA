@@ -1,23 +1,29 @@
 using Discord;
 using Discord.Net;
 using Discord.WebSocket;
+using NetBot.Bot.Services;
 using NetBot.Lib.Attributes;
 using NetBot.Lib.Types.JSON;
 using Newtonsoft.Json;
-using NetBot.Bot.Services;
 
-namespace NetBot.Bot.Commands
+namespace NetBot.Bot.Commands.DND
 {
-    public class Races
+    public class RaceInfo : ISlashCommand
     {
-        [Description("Get information on a given D&D race THIS IS ALSO A VERY UNIQUE DESCRIPTION")]
-        [Options("race", "The race to get information on", ApplicationCommandOptionType.String, true)]
-        public static async void RaceInfo(SocketSlashCommand slashCommand)
+        public SlashCommandBuilder SlashCommandBuilder => new SlashCommandBuilder()
+            .WithName("raceinfo")
+            .WithDescription("Get information on a given D&D race")
+            .AddOption("race", ApplicationCommandOptionType.String, "The race to get information on", isRequired: true);
+
+        public ulong? Guild => null;
+
+        public async Task CommandEvent(SocketSlashCommand command)
         {
             string json = await File.ReadAllTextAsync(Path.Combine(Directory.GetCurrentDirectory(), "data", "races.json"));
             Root? races = JsonConvert.DeserializeObject<Root>(json);
 
-            string arg = (string)slashCommand.Data.Options.First().Value;
+            string arg = (string)command.Data.Options.First().Value;
+            Race? race = races?.race.Find(r => r.name.ToLower().Contains(arg.ToLower()));
 
             // there should probably be a more robust check for this in the future, plenty of valid races return no results as it is
             IEnumerable<Race>? relevantRaces = races?.race.Where(r => r.name.ToLower().Contains(arg.ToLower()));
@@ -42,13 +48,6 @@ namespace NetBot.Bot.Commands
             }
 
             await slashCommand.RespondAsync(embed: embed.Build());
-        }
-
-        [Description("This is a test command")]
-        [Options("test", "hehe", ApplicationCommandOptionType.String)]
-        public static async void TestCommand(SocketSlashCommand slashCommand)
-        {
-            await slashCommand.Channel.SendMessageAsync($"The argument provided was: {slashCommand.Data.Options.First().Value}");
         }
     }
 }

@@ -6,10 +6,11 @@ using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using System.Reflection;
 using NetBot.Bot.Commands;
 
 namespace NetBot.Bot.Services
@@ -22,41 +23,53 @@ namespace NetBot.Bot.Services
         public SlashCommandHandler(DiscordSocketClient client)
         {
             _client = client;
-            //_commands = commands;
-            //_service = service;
-
-            _client.SlashCommandExecuted += e_SlashCommandExecuted;
+            _client.SlashCommandExecuted += SlashCommandEvent;
         }
 
-        public async Task Global_Slash_Commands()
+        static dynamic GetCommands()
         {
-            var echoCommand = new SlashCommandBuilder()
-                .WithName("echo")
-                .WithDescription("Repeats a given phrase")
-                .AddOption("text", ApplicationCommandOptionType.String, "The text you want to be echoed THIS WAS GENERATED MANUALLY", true);
-            var userInfo = new SlashCommandBuilder()
-                .WithName("userinfo")
-                .WithDescription("Displays information on a given user, or yourself if none is given THIS WAS GENERATED MANUALLY")
-                .AddOption("user", ApplicationCommandOptionType.User, "The user whose information you want to display");
-            var raceInfo = new SlashCommandBuilder()
-                .WithName("raceinfo")
-                .WithDescription("Get info on a D&D race")
-                .AddOption("race", ApplicationCommandOptionType.String, "The race to fetch information on THIS WAS GENERATED MANUALLY", true);
+            return Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(ISlashCommand).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+        }
 
-            log.Debug($"Client: {_client}");
-            try
+        public async Task RegisterSlashCommands()
+        {
+            foreach (var slashCommand in GetCommands())
             {
-                await _client.CreateGlobalApplicationCommandAsync(echoCommand.Build());
-                await _client.CreateGlobalApplicationCommandAsync(userInfo.Build());
-                //await _client.GetGuild(1012834935469506590).CreateApplicationCommandAsync(raceInfo.Build());
-            }
-            catch (HttpException exception)
-            {
-                log.Error(exception.StackTrace, exception);
+                var command = Activator.CreateInstance(slashCommand) as ISlashCommand;
+                if (command is null) break;
+
+                await BuildSlashCommand(command);
             }
         }
 
-        public async Task e_SlashCommandExecuted(SocketSlashCommand command)
+        private async Task BuildSlashCommand(dynamic command)
+        {
+            SlashCommandBuilder commandBuilder = command.SlashCommandBuilder;
+            if (command.Guild is null)
+            {
+                try
+                {
+                    await _client.CreateGlobalApplicationCommandAsync(commandBuilder.Build());
+                }
+                catch (HttpException exception)
+                {
+                    log.Error(exception.StackTrace, exception);
+                }
+            }
+            else
+            {
+                try
+                {
+                    await _client.GetGuild((ulong)command.Guild).CreateApplicationCommandAsync(commandBuilder.Build());
+                }
+                catch (HttpException exception)
+                {
+                    log.Error(exception.StackTrace, exception);
+                }
+            }
+        }
+
+        public async Task SlashCommandEvent(SocketSlashCommand command)
         {
             string name = command.Data.Name;
             var raceCommands = typeof(Races).GetMethods();
@@ -64,15 +77,15 @@ namespace NetBot.Bot.Services
             log.Debug($"`raceCommands is null: {raceCommands is null}`");
 
             if (!(raceCommands is null))
+            foreach (var slashCommand in GetCommands())
             {
-                foreach (var rc in raceCommands)
+                var _command = Activator.CreateInstance(slashCommand) as ISlashCommand;
+                if (_command is null) break;
+                
+                SlashCommandBuilder builder = _command.SlashCommandBuilder;
+                if (builder.Name == command.CommandName)
                 {
-                    if (rc.Name.ToLower() == command.Data.Name)
-                    {
-                        rc.Invoke(null, new object?[] { command });
-                        log.Debug($"Command Executed: {command.Data.Name}");
-                        break;
-                    }
+                    await _command.CommandEvent(command);
                 }
             }
         }

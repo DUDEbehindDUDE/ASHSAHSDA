@@ -24,12 +24,12 @@ namespace NetBot
 
             _client = new DiscordSocketClient();
             _client.Log += Log;
-            //_client.SlashCommandExecuted += new NetBot.Bot.Services.CommandHandler(_client).SlashCommandHandler;
+            _client.SlashCommandExecuted += new SlashCommandHandler(_client).SlashCommandEvent;
             _client.Ready += new SlashCommandHandler(_client).Global_Slash_Commands;
 
             DotNetEnv.Env.TraversePath().Load(".env");
 
-            string token = DotNetEnv.Env.GetString("TOKEN");
+            string token = DotNetEnv.Env.GetString("TOKEN2");
             if (String.IsNullOrEmpty(token))
             {
                 log.Fatal("Discord token not provided! Create a file named '.env' and add 'TOKEN=<your bot's token>' to it.");

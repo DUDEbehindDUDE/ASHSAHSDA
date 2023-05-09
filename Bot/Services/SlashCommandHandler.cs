@@ -6,7 +6,9 @@ using NetBot.Bot.Commands;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,25 +24,61 @@ namespace NetBot.Bot.Services
             _client = client;
         }
 
+        static dynamic GetCommands()
+        {
+            return Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(ISlashCommand).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+        }
+
         public async Task Global_Slash_Commands()
         {
-            var echoCommand = new SlashCommandBuilder()
-                .WithName("echo")
-                .WithDescription("Repeats a given phrase")
-                .AddOption("text", ApplicationCommandOptionType.String, "The text you want to be echoed", true);
-            var userInfo = new SlashCommandBuilder()
-                .WithName("userinfo")
-                .WithDescription("Displays information on a given user, or yourself if none is given")
-                .AddOption("user", ApplicationCommandOptionType.User, "The user whose information you want to display");
-            log.Debug($"Client: {_client}");
-            try
+            foreach (var slashCommand in GetCommands())
             {
-                await _client.CreateGlobalApplicationCommandAsync(echoCommand.Build());
-                await _client.CreateGlobalApplicationCommandAsync(userInfo.Build());
+                var command = Activator.CreateInstance(slashCommand) as ISlashCommand;
+                if (command is null) break;
+
+                await BuildSlashCommand(command);
             }
-            catch (HttpException exception)
+        }
+
+        private async Task BuildSlashCommand(dynamic command)
+        {
+            SlashCommandBuilder commandBuilder = command.SlashCommandBuilder;
+            if (command.Guild is null)
             {
-                log.Error(exception.StackTrace, exception);
+                try
+                {
+                    await _client.CreateGlobalApplicationCommandAsync(commandBuilder.Build());
+                }
+                catch (HttpException exception)
+                {
+                    log.Error(exception.StackTrace, exception);
+                }
+            }
+            else
+            {
+                try
+                {
+                    await _client.GetGuild((ulong)command.Guild).CreateApplicationCommandAsync(commandBuilder.Build());
+                }
+                catch (HttpException exception)
+                {
+                    log.Error(exception.StackTrace, exception);
+                }
+            }
+        }
+
+        public async Task SlashCommandEvent(SocketSlashCommand command)
+        {
+            foreach (var slashCommand in GetCommands())
+            {
+                var _command = Activator.CreateInstance(slashCommand) as ISlashCommand;
+                if (_command is null) break;
+                
+                SlashCommandBuilder builder = _command.SlashCommandBuilder;
+                if (builder.Name == command.CommandName)
+                {
+                    await _command.CommandEvent(command);
+                }
             }
         }
     }

@@ -2,9 +2,9 @@
 using Discord.WebSocket;
 using Discord.Commands;
 using log4net;
-using NetBot.Bot.Commands;
 using NetBot.Bot.Services;
 using System.Diagnostics;
+using System.Reflection;
 
 [assembly: log4net.Config.XmlConfigurator(Watch = true)]
 
@@ -13,9 +13,7 @@ namespace NetBot
     public class Program
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(Program));
-
         private readonly CommandService _commands = new CommandService();
-
         private DiscordSocketClient? _client;
         public static Task Main(string[] args) => new Program().MainAsync();
 
@@ -24,8 +22,9 @@ namespace NetBot
 
             _client = new DiscordSocketClient();
             _client.Log += Log;
-            //_client.SlashCommandExecuted += new NetBot.Bot.Services.CommandHandler(_client).SlashCommandHandler;
             _client.Ready += new SlashCommandHandler(_client).Global_Slash_Commands;
+
+            var builder = new CommandBuilder(_client);
 
             DotNetEnv.Env.TraversePath().Load(".env");
 
@@ -38,6 +37,8 @@ namespace NetBot
 
             await _client.LoginAsync(TokenType.Bot, token);
             await _client.StartAsync();
+
+            await builder.RegisterCommands();
 
             // Block this task until the program is closed.
             await Task.Delay(-1);

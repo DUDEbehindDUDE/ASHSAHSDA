@@ -61,7 +61,7 @@ namespace NetBot.Bot.Services
             string name = command.Data.Name;
             var raceCommands = typeof(Races).GetMethods();
 
-            await command.RespondAsync($"`raceCommands is null: {raceCommands is null}`");
+            log.Debug($"`raceCommands is null: {raceCommands is null}`");
 
             if (!(raceCommands is null))
             {

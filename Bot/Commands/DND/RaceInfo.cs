@@ -38,7 +38,7 @@ namespace NetBot.Bot.Commands.DND
                 return;
             }
 
-            var embed = new EmbedBuilder()
+            EmbedBuilder embed = new EmbedBuilder()
             {
                 Title = "Relevant race entries",
                 Description = "Since there are likely multiple instances of the same race across separate publications, provided here is a list of all the ones I've found",
@@ -46,9 +46,12 @@ namespace NetBot.Bot.Commands.DND
                 Author = new EmbedUserBuilder(slashCommand.User)
             }.WithCurrentTimestamp();
 
-            var menuBuilder = new SelectMenuBuilder()
+            SelectMenuBuilder menuBuilder = new SelectMenuBuilder()
                 .WithPlaceholder("Select a source for the race")
                 .WithCustomId("racemenu");
+
+            EmbedBuilder? embed2 = default;
+            SelectMenuBuilder? menuBuilder2 = default;
 
 
             int acc = 1;
@@ -57,25 +60,66 @@ namespace NetBot.Bot.Commands.DND
             {
                 foreach (Subrace subrace in relevantSubraces)
                 {
-                    if (acc >= 25) break;
-                    embed.AddField(subrace.name ?? subrace.raceName, $"**{subrace.source}** (p. {subrace.page})", true);
-                    menuBuilder.AddOption($"{acc}. {subrace.name} ({subrace.source})", $"{subrace.name}|{subrace.source.ToLower()}-{acc}");
+                    string name = subrace.name ?? subrace.raceName;
+
+                    if (acc >= 25)
+                    {
+                        embed2 = new EmbedBuilder()
+                        {
+                            Title = "Relevant race entries",
+                            Color = Color.Green,
+                            Author = new EmbedUserBuilder(slashCommand.User)
+                        }.WithCurrentTimestamp();
+
+                        menuBuilder2 = new SelectMenuBuilder()
+                            .WithPlaceholder("Select a source for the race")
+                            .WithCustomId("racemenu2");
+
+                        embed2.AddField(name, $"**{subrace.source}** (p. {subrace.page})", true);
+                        menuBuilder2.AddOption($"{acc}. {name} ({subrace.source})", $"{name}|{subrace.source.ToLower()}#{acc}", $"The {name} race as published in the {subrace.source}");
+
+                        acc++;
+                        break;
+                    };
+
+                    embed.AddField(name, $"**{subrace.source}** (p. {subrace.page})", true);
+                    menuBuilder.AddOption($"{acc}. {name} ({subrace.source})", $"{name}|{subrace.source.ToLower()}#{acc}", $"The {name} race as published in the {subrace.source}");
                     acc++;
                 }
             }
 
             foreach (Race r in relevantRaces)
             {
-                if (acc >= 25) break;
+                if (acc >= 25)
+                {
+                    embed2?.AddField(r?.name, $"**{r?.source}** (p. {r?.page})", true);
+                    menuBuilder2?.AddOption($"{acc}. {r?.name} ({r?.source})", $"{r?.name}|{r?.source.ToLower()}#{acc}", $"The {r?.name} race as published in the {r?.source}");
+                    acc++;
+                    break;
+                };
+
                 embed.AddField(r?.name, $"**{r?.source}** (p. {r?.page})", true);
-                menuBuilder.AddOption($"{acc}. {r?.name} ({r?.source})", $"{r?.name}|{r?.source.ToLower()}-{acc}", $"The {r?.name} race as published in the {r?.source}");
+                menuBuilder.AddOption($"{acc}. {r?.name} ({r?.source})", $"{r?.name}|{r?.source.ToLower()}#{acc}", $"The {r?.name} race as published in the {r?.source}");
                 acc++;
             }
 
-            var component = new ComponentBuilder()
+            ComponentBuilder component = new ComponentBuilder()
                 .WithSelectMenu(menuBuilder);
 
-            await slashCommand.RespondAsync(embed: embed.Build(), components: component.Build(), ephemeral: true);
+            bool isDefault = EqualityComparer<SelectMenuBuilder>.Default.Equals(menuBuilder2);
+            bool isNull = menuBuilder2 is null;
+
+            if (!isDefault && !isNull)
+            {
+                component.WithSelectMenu(menuBuilder2);
+            }
+
+            await slashCommand.RespondAsync(
+                embeds: (embed2 is null || embed2.Color != Color.Green) ? new Embed[] { embed.Build() } : new Embed[] { embed.Build(), embed2.Build() },
+                components: component.Build(),
+                ephemeral: true
+            );
+
         }
     }
 }

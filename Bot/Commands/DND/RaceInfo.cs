@@ -20,6 +20,14 @@ namespace NetBot.Bot.Commands.DND
 
         public async Task CommandEvent(SocketSlashCommand slashCommand)
         {
+            var database = new DatabaseHandler();
+            bool tos = await database.CheckDNDTos(slashCommand);
+            if (!tos)
+            {
+                await slashCommand.RespondAsync("Hold up! It appears that you haven't agreed to the TOS.");
+                return;
+            }
+
             string json = await File.ReadAllTextAsync(Path.Combine(Directory.GetCurrentDirectory(), "data", "races.json"));
             Root? races = JsonConvert.DeserializeObject<Root>(json);
             List<Subrace>? subraces = races?.subrace;

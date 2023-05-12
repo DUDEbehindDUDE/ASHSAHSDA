@@ -8,6 +8,7 @@ using Discord.WebSocket;
 using log4net;
 using Newtonsoft.Json;
 using NetBot.Lib.Types.JSON;
+using static NetBot.Bot.Services.DatabaseHandler;
 
 
 namespace NetBot.Bot.Services
@@ -21,6 +22,7 @@ namespace NetBot.Bot.Services
         {
             _client = client;
             _client.SelectMenuExecuted += SelectMenuInteractionHandler;
+            _client.ButtonExecuted += TermsInteractionHandler;
         }
 
         public async Task SelectMenuInteractionHandler(SocketMessageComponent component)
@@ -84,6 +86,41 @@ namespace NetBot.Bot.Services
             }.WithCurrentTimestamp();
 
             await component.Channel.SendMessageAsync(embed: embed.Build());
+        }
+
+        public static async Task TermsInteractionHandler(SocketMessageComponent component)
+        {
+            bool acceptTerms;
+            switch (component.Data.CustomId)
+            {
+                case "accept":
+                    acceptTerms = true;
+                    break;
+                case "deny":
+                    acceptTerms = false;
+                    break;
+                default:
+                    return;
+            }
+            var response = await UpdateDNDTerms(component.User.Id, acceptTerms);
+            bool? previous = response.previous;
+            bool? result = response.result;
+
+            switch (result)
+            {
+                case null:
+                    await component.RespondAsync("There was a problem contacting the database. Try again later.", ephemeral: true);
+                    return;
+                case bool b when b == previous:
+                    await component.RespondAsync("Your response hasn't changed since last time.", ephemeral: true);
+                    return;
+                case true:
+                    await component.RespondAsync("Thank you for agreeing to the terms. You can now execute any DND related command.", ephemeral: true);
+                    return;
+                case false:
+                    await component.RespondAsync("Response updated. You will have to agree to the terms again to use any DND related commands.", ephemeral: true);
+                    return;
+            }
         }
     }
 }

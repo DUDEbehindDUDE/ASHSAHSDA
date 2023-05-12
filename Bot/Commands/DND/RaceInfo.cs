@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using Discord.Interactions;
 using Discord.API;
 using NetBot.Bot.Services;
+using static NetBot.Bot.Services.DatabaseHandler;
 using NetBot.Lib.Types.JSON;
 using Newtonsoft.Json;
 
@@ -20,13 +21,8 @@ namespace NetBot.Bot.Commands.DND
 
         public async Task CommandEvent(SocketSlashCommand slashCommand)
         {
-            var database = new DatabaseHandler();
-            bool tos = await database.CheckDNDTos(slashCommand);
-            if (!tos)
-            {
-                await slashCommand.RespondAsync("Hold up! It appears that you haven't agreed to the TOS.");
-                return;
-            }
+            bool tos = await CheckDNDTos(slashCommand);
+            if (tos == false) return;
 
             string json = await File.ReadAllTextAsync(Path.Combine(Directory.GetCurrentDirectory(), "data", "races.json"));
             Root? races = JsonConvert.DeserializeObject<Root>(json);
@@ -49,7 +45,7 @@ namespace NetBot.Bot.Commands.DND
             var embed = new EmbedBuilder()
             {
                 Title = "Relevant race entries",
-                Description = "Since there are likely multiple instances of the same race across separate publications, provided here is a list of all the ones I've found",
+                Description = "Since there are likely multiple instances of the same race across separate publications, provided here is a list of all the ones I've found:",
                 Color = Color.Green,
                 Author = new EmbedUserBuilder(slashCommand.User)
             }.WithCurrentTimestamp();

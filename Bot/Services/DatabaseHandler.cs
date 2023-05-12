@@ -1,4 +1,5 @@
-﻿using Discord.WebSocket;
+﻿using Discord;
+using Discord.WebSocket;
 using log4net;
 using Oracle.ManagedDataAccess.Client;
 using System;
@@ -13,51 +14,100 @@ namespace NetBot.Bot.Services
     public class DatabaseHandler
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DatabaseHandler));
+        private static readonly string connectionString = DotNetEnv.Env.GetString("CONNECTION_STRING") + "Min Pool Size=5;";
 
-        string connectionString = DotNetEnv.Env.GetString("CONNECTION_STRING");
-
-        public async Task<bool> CheckDNDTos(SocketSlashCommand command)
+        public static async Task<bool> CheckDNDTos(SocketSlashCommand command)
         {
-            log.Debug(connectionString);
             ulong userID = command.User.Id;
-            await CheckCreateUser(userID);
 
-            string sql = "SELECT COUNT agreeToDND FROM users WHERE id = :userID";
+            string sql = "SELECT agreeToDND FROM users WHERE id = :userID";
             using (OracleConnection connection = new OracleConnection(connectionString))
             using (OracleCommand getTos =  new OracleCommand(sql, connection))
             {
-                await connection.OpenAsync();
+                try
+                {
+                    await CheckCreateUser(userID);
 
-                getTos.Parameters.Add("userID", userID);
-                int? tos = (int?)await getTos.ExecuteScalarAsync();
+                    await connection.OpenAsync();
 
-                if (tos.Equals(0)) return false;
-                else return true;
+                    getTos.Parameters.Add("userID", (long)userID);
+                    short? tos = (short?)await getTos.ExecuteScalarAsync(); // When reading from the database, it's a short?; when writing it's an int. Very confusing.
+
+                    if (tos == 0)
+                    {
+                        Embed embed = new EmbedBuilder()
+                            .WithTitle("Hold up!")
+                            .WithDescription("Before you can use any commands related to DND, you must aknowledge that you already own the rulebooks, and otherwise any content that goes with it. If you agree to this, run the command </agreetoterms:1106074501122367538>.")
+                            .WithColor(Color.Red)
+                            .Build();
+                        await command.RespondAsync(embed: embed, ephemeral: true);
+                        return false;
+                    }
+                    else return true;
+                } 
+                catch (Exception ex)
+                {
+                    log.Error(ex.Message, ex);
+                    return true;
+                }
             }
         }
 
-        private async Task CheckCreateUser(ulong id)
+        public static async Task CheckCreateUser(ulong id)
         {
-            string sql = "SELECT COUNT(*) FROM users WHERE id = :userID";
+            string sql = "SELECT * FROM users WHERE id = :userID";
 
-            using (OracleConnection connection = new OracleConnection(connectionString))
-            using (OracleCommand command = new OracleCommand(sql, connection))
+            using (OracleConnection connection = new(connectionString))
+            using (OracleCommand command = new(sql, connection))
             {
-                log.Debug("CheckCreateUser.openasync");
                 await connection.OpenAsync();
-                log.Debug("it's opened");
-
-                command.Parameters.Add(new OracleParameter("userID", id));
+                command.Parameters.Add(new OracleParameter("userID", (long)id));
                 var result = await command.ExecuteScalarAsync();
-
                 if (result is null)
                 {
-                    OracleCommand createUser = new OracleCommand("INSERT INTO users (id) VALUES (:userID)", connection);
-                    createUser.Parameters.Add("userID", id);
+                    OracleCommand createUser = new("INSERT INTO users (id) VALUES (:userID)", connection);
+                    createUser.Parameters.Add("userID", (long)id);
                     await createUser.ExecuteNonQueryAsync();
-                    log.Debug($"Added {id} into database");
                 }
             }
+        }
+
+        public static async Task<(bool? previous, bool? result)> UpdateDNDTerms(ulong discordId, bool value)
+        {
+            int agreeToTerms = value ? 1 : 0;
+            short? pdbValue;
+            short? dbValue;
+
+            string sql = "UPDATE users SET AGREETODND = :agree WHERE id = :id";
+
+            try
+            {
+                await CheckCreateUser(discordId);
+
+                using (OracleConnection connection = new(connectionString))
+                using (OracleCommand command = new(sql, connection))
+                using (OracleCommand checkValue = new("SELECT agreeToDND FROM users WHERE id = :id", connection))
+                {
+                    await connection.OpenAsync();
+                    command.Parameters.Add(new OracleParameter("agree", agreeToTerms));
+                    command.Parameters.Add(new OracleParameter("id", (long)discordId));
+                    checkValue.Parameters.Add("id", (long)discordId);
+
+
+                    pdbValue = (short?)await checkValue.ExecuteScalarAsync();
+                    await command.ExecuteScalarAsync();
+                    dbValue = (short?)await checkValue.ExecuteScalarAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                return (null, null);
+            }
+
+            bool previous = (pdbValue == 0) ? false : true;
+            bool result = (dbValue == 0) ? false : true;
+            return (previous, result);
         }
     }
 }

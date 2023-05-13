@@ -83,7 +83,7 @@ namespace NetBot.Bot.Services
             await component.Channel.SendMessageAsync(embed: embed.Build());
         }
 
-        public static async Task TermsInteractionHandler(SocketMessageComponent component)
+        public async Task TermsInteractionHandler(SocketMessageComponent component)
         {
             bool? acceptTerms = component.Data.CustomId switch
             {

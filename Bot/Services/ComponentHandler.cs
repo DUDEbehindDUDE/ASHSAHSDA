@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using log4net;
@@ -15,7 +10,7 @@ namespace NetBot.Bot.Services
 {
     public class ComponentHandler
     {
-        private DiscordSocketClient _client;
+        private readonly DiscordSocketClient _client;
         private static readonly ILog log = LogManager.GetLogger(typeof(ComponentHandler));
 
         public ComponentHandler(DiscordSocketClient client)
@@ -25,7 +20,7 @@ namespace NetBot.Bot.Services
             _client.ButtonExecuted += TermsInteractionHandler;
         }
 
-        public async Task SelectMenuInteractionHandler(SocketMessageComponent component)
+        public static async Task SelectMenuInteractionHandler(SocketMessageComponent component)
         {
             await component.DeferAsync();
 
@@ -37,7 +32,7 @@ namespace NetBot.Bot.Services
             }
         }
 
-        public async Task RaceMenuInteractionHandler(SocketMessageComponent component)
+        public static async Task RaceMenuInteractionHandler(SocketMessageComponent component)
         {
             string? userChoice = component.Data.Values.First();
             int pipeIndex = userChoice.IndexOf("|");
@@ -90,19 +85,17 @@ namespace NetBot.Bot.Services
 
         public static async Task TermsInteractionHandler(SocketMessageComponent component)
         {
-            bool acceptTerms;
-            switch (component.Data.CustomId)
+            bool? acceptTerms = component.Data.CustomId switch
             {
-                case "accept":
-                    acceptTerms = true;
-                    break;
-                case "deny":
-                    acceptTerms = false;
-                    break;
-                default:
-                    return;
-            }
-            var response = await UpdateDNDTerms(component.User.Id, acceptTerms);
+                "accept" => true,
+                "deny" => false,
+                _ => null
+            };
+            log.Debug(acceptTerms);
+            log.Debug(component.Data.CustomId);
+            if (acceptTerms is null) return;
+
+            var response = await UpdateDNDTerms(component.User.Id, (bool)acceptTerms);
             bool? previous = response.previous;
             bool? result = response.result;
 

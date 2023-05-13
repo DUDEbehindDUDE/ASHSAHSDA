@@ -4,7 +4,6 @@ using Discord.WebSocket;
 using Discord.Interactions;
 using Discord.API;
 using NetBot.Bot.Services;
-using static NetBot.Bot.Services.DatabaseHandler;
 using NetBot.Lib.Types.JSON;
 using Newtonsoft.Json;
 
@@ -21,9 +20,6 @@ namespace NetBot.Bot.Commands.DND
 
         public async Task CommandEvent(SocketSlashCommand slashCommand)
         {
-            bool tos = await CheckDNDTos(slashCommand);
-            if (tos == false) return;
-
             string json = await File.ReadAllTextAsync(Path.Combine(Directory.GetCurrentDirectory(), "data", "races.json"));
             Root? races = JsonConvert.DeserializeObject<Root>(json);
             List<Subrace>? subraces = races?.subrace;

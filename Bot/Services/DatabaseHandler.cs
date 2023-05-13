@@ -1,28 +1,23 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using DotNetEnv;
 using log4net;
 using Oracle.ManagedDataAccess.Client;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace NetBot.Bot.Services
 {
     public class DatabaseHandler
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DatabaseHandler));
-        private static readonly string connectionString = DotNetEnv.Env.GetString("CONNECTION_STRING") + "Min Pool Size=5;";
+        private static readonly string connectionString = Env.GetString("CONNECTION_STRING") + "Min Pool Size=5;";
 
         public static async Task<bool> CheckDNDTos(SocketSlashCommand command)
         {
             ulong userID = command.User.Id;
 
             string sql = "SELECT agreeToDND FROM users WHERE id = :userID";
-            using (OracleConnection connection = new OracleConnection(connectionString))
-            using (OracleCommand getTos =  new OracleCommand(sql, connection))
+            using (OracleConnection connection = new(connectionString))
+            using (OracleCommand getTos =  new(sql, connection))
             {
                 try
                 {
@@ -33,20 +28,20 @@ namespace NetBot.Bot.Services
                     getTos.Parameters.Add("userID", (long)userID);
                     short? tos = (short?)await getTos.ExecuteScalarAsync(); // When reading from the database, it's a short?; when writing it's an int. Very confusing.
 
-                    if (tos == 0)
-                    {
-                        Embed embed = new EmbedBuilder()
-                            .WithTitle("Hold up!")
-                            .WithDescription("Before you can use any commands related to DND, you must aknowledge that you already own the rulebooks, and otherwise any content that goes with it. If you agree to this, run the command </agreetoterms:1106074501122367538>.")
-                            .WithColor(Color.Red)
-                            .Build();
-                        await command.RespondAsync(embed: embed, ephemeral: true);
-                        return false;
-                    }
-                    else return true;
+                    if (tos != 0) 
+                        return true;
+
+                    Embed embed = new EmbedBuilder()
+                        .WithTitle("Hold up!")
+                        .WithDescription("Before you can use any commands related to DND, you must aknowledge that you already own the rulebooks, and otherwise any content that goes with it. If you agree to this, run the command </agreetoterms:1106074501122367538>.")
+                        .WithColor(Color.Red)
+                        .Build();
+                    await command.RespondAsync(embed: embed, ephemeral: true);
+                    return false;
                 } 
                 catch (Exception ex)
                 {
+                    log.Error("Got an error checking if user agreed to TOS; defaulting to true. Error:");
                     log.Error(ex.Message, ex);
                     return true;
                 }
@@ -85,17 +80,17 @@ namespace NetBot.Bot.Services
                 await CheckCreateUser(discordId);
 
                 using (OracleConnection connection = new(connectionString))
-                using (OracleCommand command = new(sql, connection))
+                using (OracleCommand changeValue = new(sql, connection))
                 using (OracleCommand checkValue = new("SELECT agreeToDND FROM users WHERE id = :id", connection))
                 {
                     await connection.OpenAsync();
-                    command.Parameters.Add(new OracleParameter("agree", agreeToTerms));
-                    command.Parameters.Add(new OracleParameter("id", (long)discordId));
+                    changeValue.Parameters.Add(new OracleParameter("agree", agreeToTerms));
+                    changeValue.Parameters.Add(new OracleParameter("id", (long)discordId));
                     checkValue.Parameters.Add("id", (long)discordId);
 
 
                     pdbValue = (short?)await checkValue.ExecuteScalarAsync();
-                    await command.ExecuteScalarAsync();
+                    await changeValue.ExecuteScalarAsync();
                     dbValue = (short?)await checkValue.ExecuteScalarAsync();
                 }
             }
@@ -105,8 +100,8 @@ namespace NetBot.Bot.Services
                 return (null, null);
             }
 
-            bool previous = (pdbValue == 0) ? false : true;
-            bool result = (dbValue == 0) ? false : true;
+            bool previous = pdbValue != 0;
+            bool result = dbValue != 0;
             return (previous, result);
         }
     }

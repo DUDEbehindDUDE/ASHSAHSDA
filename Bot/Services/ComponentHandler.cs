@@ -88,21 +88,19 @@ namespace NetBot.Bot.Services
             await component.Channel.SendMessageAsync(embed: embed.Build());
         }
 
-        public static async Task TermsInteractionHandler(SocketMessageComponent component)
+        public async Task TermsInteractionHandler(SocketMessageComponent component)
         {
-            bool acceptTerms;
-            switch (component.Data.CustomId)
+            bool? acceptTerms = component.Data.CustomId switch
             {
-                case "accept":
-                    acceptTerms = true;
-                    break;
-                case "deny":
-                    acceptTerms = false;
-                    break;
-                default:
-                    return;
-            }
-            var response = await UpdateDNDTerms(component.User.Id, acceptTerms);
+                "accept" => true,
+                "deny" => false,
+                _ => null
+            };
+            log.Debug(acceptTerms);
+            log.Debug(component.Data.CustomId);
+            if (acceptTerms is null) return;
+
+            var response = await UpdateDNDTerms(component.User.Id, (bool)acceptTerms);
             bool? previous = response.previous;
             bool? result = response.result;
 

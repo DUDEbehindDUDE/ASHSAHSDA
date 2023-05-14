@@ -27,7 +27,7 @@ jobs:
     - name: Test
       run: dotnet test --no-build --verbosity normal
     - name: Publish
-      run: dotnet publish ASHSAHSDA/ASHSAHSDA.csproj -c Release -o release --nologo
+      run: dotnet publish ASHSAHSDA.csproj -c Release -o release --nologo
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v2
       with:

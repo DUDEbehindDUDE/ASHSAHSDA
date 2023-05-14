@@ -1,29 +1,26 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using log4net;
 using Newtonsoft.Json;
 using NetBot.Lib.Types.JSON;
+using static NetBot.Bot.Services.DatabaseHandler;
 
 
 namespace NetBot.Bot.Services
 {
     public class ComponentHandler
     {
-        private DiscordSocketClient _client;
+        private readonly DiscordSocketClient _client;
         private static readonly ILog log = LogManager.GetLogger(typeof(ComponentHandler));
 
         public ComponentHandler(DiscordSocketClient client)
         {
             _client = client;
             _client.SelectMenuExecuted += SelectMenuInteractionHandler;
+            _client.ButtonExecuted += TermsInteractionHandler;
         }
 
-        public async Task SelectMenuInteractionHandler(SocketMessageComponent component)
+        public static async Task SelectMenuInteractionHandler(SocketMessageComponent component)
         {
             //await component.DeferAsync();
 
@@ -36,7 +33,7 @@ namespace NetBot.Bot.Services
             }
         }
 
-        public async Task RaceMenuInteractionHandler(SocketMessageComponent component)
+        public static async Task RaceMenuInteractionHandler(SocketMessageComponent component)
         {
             string? userChoice = component.Data.Values.First();
             int pipeIndex = userChoice.LastIndexOf("|");
@@ -94,6 +91,39 @@ namespace NetBot.Bot.Services
             {
                 i.Embed = embed.Build();
             });
+        }
+
+        public async Task TermsInteractionHandler(SocketMessageComponent component)
+        {
+            bool? acceptTerms = component.Data.CustomId switch
+            {
+                "accept" => true,
+                "deny" => false,
+                _ => null
+            };
+            log.Debug(acceptTerms);
+            log.Debug(component.Data.CustomId);
+            if (acceptTerms is null) return;
+
+            var response = await UpdateDNDTerms(component.User.Id, (bool)acceptTerms);
+            bool? previous = response.previous;
+            bool? result = response.result;
+
+            switch (result)
+            {
+                case null:
+                    await component.RespondAsync("There was a problem contacting the database. Try again later.", ephemeral: true);
+                    return;
+                case bool b when b == previous:
+                    await component.RespondAsync("Your response hasn't changed since last time.", ephemeral: true);
+                    return;
+                case true:
+                    await component.RespondAsync("Thank you for agreeing to the terms. You can now execute any DND related command.", ephemeral: true);
+                    return;
+                case false:
+                    await component.RespondAsync("Response updated. You will have to agree to the terms again to use any DND related commands.", ephemeral: true);
+                    return;
+            }
         }
     }
 }

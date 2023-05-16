@@ -1,17 +1,10 @@
 ﻿using Discord;
 using Discord.Net;
 using Discord.WebSocket;
-using Discord.Interactions;
 using log4net;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using NetBot.Bot.Commands.DND;
+using static NetBot.Bot.Services.DatabaseHandler;
 
 namespace NetBot.Bot.Services
 {
@@ -24,7 +17,13 @@ namespace NetBot.Bot.Services
         {
             _client = client;
             _client.SlashCommandExecuted += SlashCommandEvent;
+            _client.Ready += RegisterSlashCommands;
         }
+
+        static readonly List<string> dndCommands = new()
+        {   // I know this isn't an ideal way to implement this; i'll fix it in a future PR when we switch the command handler to use attributes 
+            "raceinfo"
+        };
 
         static dynamic GetCommands()
         {
@@ -69,7 +68,7 @@ namespace NetBot.Bot.Services
             }
         }
 
-        public async Task SlashCommandEvent(SocketSlashCommand command)
+        public static async Task SlashCommandEvent(SocketSlashCommand command)
         {
             foreach (var slashCommand in GetCommands())
             {
@@ -77,10 +76,15 @@ namespace NetBot.Bot.Services
                 if (_command is null) break;
 
                 SlashCommandBuilder builder = _command.SlashCommandBuilder;
-                if (builder.Name == command.CommandName)
+                if (!builder.Name.Equals(command.CommandName)) 
+                    continue;
+
+                if (dndCommands.Contains(command.CommandName))
                 {
-                    await _command.CommandEvent(command);
+                    bool tos = await CheckDNDTos(command);
+                    if (tos == false) return;
                 }
+                await _command.CommandEvent(command);
             }
         }
     }

@@ -41,7 +41,7 @@ namespace NetBot.Bot.Commands.DND
             EmbedBuilder embed = new EmbedBuilder()
             {
                 Title = "Relevant race entries",
-                Description = "Since there are likely multiple instances of the same race across separate publications, provided here is a list of all the ones I've found",
+                Description = "Since there are likely multiple instances of the same race across separate publications, provided here is a list of all the ones I've found:",
                 Color = Color.Green,
                 Author = new EmbedUserBuilder(slashCommand.User)
             }.WithCurrentTimestamp();

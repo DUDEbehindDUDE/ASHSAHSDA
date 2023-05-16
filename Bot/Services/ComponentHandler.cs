@@ -62,8 +62,9 @@ namespace NetBot.Bot.Services
                 }
             }
 
-            string json = await File.ReadAllTextAsync(Path.Combine(Directory.GetCurrentDirectory(), "data", "races.json"));
-            Root? races = JsonConvert.DeserializeObject<Root>(json);
+            string racejson = await File.ReadAllTextAsync(Path.Combine(Directory.GetCurrentDirectory(), "data", "races.json"));
+            //string fluffjson = await File.ReadAllTextAsync(Path.Combine(Directory.GetCurrentDirectory(), "data", "fluff-races.json"));
+            Root? races = JsonConvert.DeserializeObject<Root>(racejson);
             Race? foundRace = races?.race.Find(r => r.name.ToLower() == raceName.ToLower() && r.source.ToLower() == sourceBook.ToLower());
             Subrace? foundSubrace = races?.subrace.Find
             (
@@ -85,7 +86,7 @@ namespace NetBot.Bot.Services
             var embed = new EmbedBuilder()
             {
                 Title = foundRace?.name ?? foundSubrace?.name,
-                Description = foundRace?.entries.First().ToString() ?? foundSubrace?.entries.First().ToString(),
+                Description = $"Here's what I could find on the {foundRace?.name ?? foundSubrace?.name} race",
                 Color = Color.Blue,
                 Author = new EmbedUserBuilder(component.User)
             }.WithCurrentTimestamp();
